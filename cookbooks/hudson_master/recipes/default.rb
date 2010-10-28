@@ -77,3 +77,9 @@ end
 execute "Restart nginx" do
   command "/etc/init.d/nginx restart"
 end
+
+execute "Generate key pair for slaves" do
+  key_path = "/home/#{node[:users].first[:username]}/.ssh/id_rsa"
+  command "ssh-keygen -f #{key_path} -N ''"
+  not_if { FileTest.exists?(key_path) }
+end
