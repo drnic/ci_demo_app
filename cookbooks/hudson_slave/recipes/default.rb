@@ -58,7 +58,6 @@ if ['solo','app_master'].include?(node[:instance_role]) && env_name =~ /_(ci|hud
       # Tell server about each application
       node[:applications].each do |app_name, data|
 
-        job_type = data['type'] # TODO rack, rails3, etc?
         job_config = Hudson::JobConfigBuilder.new(:rails) do |c|
           c.scm           = data[:repository_name]
           c.assigned_node = app_name
