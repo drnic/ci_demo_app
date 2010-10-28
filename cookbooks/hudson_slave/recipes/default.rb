@@ -11,13 +11,6 @@
 # * Only add the slaves and nodes if they aren't already on the master
 
 # Config - move to attributes
-node[:hudson] ||= Hash.new
-node[:hudson][:master] ||= Hash.new
-node[:hudson][:master][:host] = "ec2-174-129-24-134.compute-1.amazonaws.com"
-node[:hudson][:master][:port] = 80
-node[:hudson][:gem] ||= Hash.new
-node[:hudson][:gem][:install] = "hudson --pre"
-node[:hudson][:gem][:version] = "hudson-0.3.0.beta.6"
 
 env_name = node[:environment][:name]
 
@@ -74,6 +67,7 @@ if ['solo','app_master'].include?(node[:instance_role]) && env_name =~ /_(ci|hud
         if Hudson::Api.create_job(app_name, job_config, :override => true)
           build_url = "#{Hudson::Api.base_uri}/job/#{app_name}/build"
           node[:hudson][:applications] << { :name => app_name, :success => true, :build_url => build_url }
+          Hudson::Api.build_job(app_name)
         else
           node[:hudson][:applications] << { :name => app_name, :success => false }
         end
