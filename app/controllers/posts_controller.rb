@@ -1,5 +1,5 @@
 class PostsController < ApplicationController
   def index
-    render :text => "Posts"
+    render :text => "Go Giants!"
   end
 end
