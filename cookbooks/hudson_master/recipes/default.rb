@@ -16,7 +16,7 @@ hudson_user = node[:users].first[:username]
 hudson_port = 8082 # change this in your proxy if modified
 hudson_home = "/data/hudson-ci"
 hudson_pid  = "#{hudson_home}/tmp/pid"
-plugins     = node[:hudson][:master][:plugins]
+plugins     = node[:hudson_master][:plugins]
 
 %w[logs tmp war plugins .].each do |dir|
   directory "#{hudson_home}/#{dir}" do

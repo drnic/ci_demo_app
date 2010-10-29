@@ -21,20 +21,20 @@ if ['solo','app_master'].include?(node[:instance_role]) && env_name =~ /_(ci|hud
   #   version "0.3.0.beta.3"
   #   action :install
   # end
-  
+
   execute "install_hudson_in_resin" do
-    command "/usr/local/ey_resin/ruby/bin/gem install #{node[:hudson][:gem][:install]}"
-    not_if { FileTest.directory?("/usr/local/ey_resin/ruby/gems/1.8/gems/#{node[:hudson][:gem][:version]}") }
+    command "/usr/local/ey_resin/ruby/bin/gem install #{node[:hudson_slave][:gem][:install]}"
+    not_if { FileTest.directory?("/usr/local/ey_resin/ruby/gems/1.8/gems/#{node[:hudson_slave][:gem][:version]}") }
   end
   
   ruby_block "authorize_hudson_master_key" do
     authorized_keys = "/home/#{node[:users].first[:username]}/.ssh/authorized_keys"
     block do
       File.open(authorized_keys, "a") do |f|
-        f.puts node[:hudson][:master][:public_key]
+        f.puts node[:hudson_slave][:master][:public_key]
       end
     end
-    not_if "grep '#{node[:hudson][:master][:public_key]}' #{authorized_keys}"
+    not_if "grep '#{node[:hudson_slave][:master][:public_key]}' #{authorized_keys}"
   end
   
   # TODO
@@ -49,7 +49,7 @@ if ['solo','app_master'].include?(node[:instance_role]) && env_name =~ /_(ci|hud
       require "hudson"
       require "hudson/config"
 
-      Hudson::Api.setup_base_url(node[:hudson][:master])
+      Hudson::Api.setup_base_url(node[:hudson_slave][:master])
       
       # Tell master about this slave
       Hudson::Api.add_node(
@@ -70,7 +70,7 @@ if ['solo','app_master'].include?(node[:instance_role]) && env_name =~ /_(ci|hud
   
   ruby_block "tell-master-about-job" do
     block do
-      node[:hudson][:applications] ||= []
+      node[:hudson_slave][:applications] ||= []
 
       # Tell server about each application
       node[:applications].each do |app_name, data|
@@ -82,10 +82,10 @@ if ['solo','app_master'].include?(node[:instance_role]) && env_name =~ /_(ci|hud
 
         if Hudson::Api.create_job(app_name, job_config, :override => true)
           build_url = "#{Hudson::Api.base_uri}/job/#{app_name}/build"
-          node[:hudson][:applications] << { :name => app_name, :success => true, :build_url => build_url }
+          node[:hudson_slave][:applications] << { :name => app_name, :success => true, :build_url => build_url }
           Hudson::Api.build_job(app_name)
         else
-          node[:hudson][:applications] << { :name => app_name, :success => false }
+          node[:hudson_slave][:applications] << { :name => app_name, :success => false }
         end
       end
     end
@@ -93,7 +93,7 @@ if ['solo','app_master'].include?(node[:instance_role]) && env_name =~ /_(ci|hud
   end
 
   # ey_cloud_report "hudson-jobs-setup" do
-  #   node[:hudson][:applications].each do |app|
+  #   node[:hudson_slave][:applications].each do |app|
   #     message "Setup build trigger to #{app[:build_url]}"
   #   end
   # end

@@ -1,4 +1,4 @@
-hudson({
+hudson_slave({
   :master => {
     :host => "ec2-174-129-24-134.compute-1.amazonaws.com",
     :port => 80,
