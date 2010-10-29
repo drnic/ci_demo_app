@@ -37,7 +37,6 @@ if ['solo','app_master'].include?(node[:instance_role]) && env_name =~ /_(ci|hud
     not_if "grep '#{node[:hudson_slave][:master][:public_key]}' #{authorized_keys}"
   end
   
-  # TODO
   execute "setup-git-config-for-tagging" do
     command %Q{ sudo su #{username} -c "git config --global user.email 'you@example.com' && git config --global user.name 'You are Special'" }
     not_if  %Q{ sudo su #{username} -c "git config user.email" }

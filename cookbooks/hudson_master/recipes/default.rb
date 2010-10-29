@@ -18,6 +18,11 @@ hudson_home = "/data/hudson-ci"
 hudson_pid  = "#{hudson_home}/tmp/pid"
 plugins     = node[:hudson_master][:plugins]
 
+execute "setup-git-config-for-tagging" do
+  command %Q{ sudo su #{username} -c "git config --global user.email 'you@example.com' && git config --global user.name 'You are Special'" }
+  not_if  %Q{ sudo su #{username} -c "git config user.email" }
+end
+
 %w[logs tmp war plugins .].each do |dir|
   directory "#{hudson_home}/#{dir}" do
     owner hudson_user
