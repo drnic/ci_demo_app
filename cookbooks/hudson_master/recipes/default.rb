@@ -19,10 +19,14 @@ hudson_pid  = "#{hudson_home}/tmp/pid"
 plugins     = node[:hudson_master][:plugins]
 
 if ['solo'].include?(node[:instance_role])
+  gem_package "bundler" do
+    source "http://gemcutter.org"
+    action :install
+  end
 
   execute "setup-git-config-for-tagging" do
-    command %Q{ sudo su #{username} -c "git config --global user.email 'you@example.com' && git config --global user.name 'You are Special'" }
-    not_if  %Q{ sudo su #{username} -c "git config user.email" }
+    command %Q{ sudo su #{hudson_user} -c "git config --global user.email 'you@example.com' && git config --global user.name 'You are Special'" }
+    not_if  %Q{ sudo su #{hudson_user} -c "git config user.email" }
   end
 
   %w[logs tmp war plugins .].each do |dir|
