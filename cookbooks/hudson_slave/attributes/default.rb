@@ -7,6 +7,6 @@ hudson_slave({
   },
   :gem => {
     :install => "hudson --pre",
-    :version => "hudson-0.3.0.beta.10"
+    :version => "hudson-0.3.0.beta.14"
   }
 })
