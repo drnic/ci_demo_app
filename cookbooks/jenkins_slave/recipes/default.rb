@@ -1,5 +1,5 @@
 #
-# Cookbook Name:: hudson_slave
+# Cookbook Name:: jenkins_slave
 # Recipe:: default
 #
 
@@ -7,24 +7,24 @@ env_name      = node[:environment][:name]
 framework_env = node[:environment][:framework_env]
 username      = node[:users].first[:username]
 
-if ['solo','app_master'].include?(node[:instance_role]) && env_name =~ /(ci|hudson_slave)$/
+if ['solo','app_master'].include?(node[:instance_role]) && env_name =~ /(ci|jenkins_slave)$/
   gem_package "bundler" do
     action :install
   end
 
-  execute "install_hudson_in_resin" do
-    command "/usr/local/ey_resin/ruby/bin/gem install #{node[:hudson_slave][:gem][:install]}"
-    not_if { FileTest.directory?("/usr/local/ey_resin/ruby/gems/1.8/gems/#{node[:hudson_slave][:gem][:version]}") }
+  execute "install_jenkins_in_resin" do
+    command "/usr/local/ey_resin/ruby/bin/gem install #{node[:jenkins_slave][:gem][:install]}"
+    not_if { FileTest.directory?("/usr/local/ey_resin/ruby/gems/1.8/gems/#{node[:jenkins_slave][:gem][:version]}") }
   end
   
-  ruby_block "authorize_hudson_master_key" do
+  ruby_block "authorize_jenkins_master_key" do
     authorized_keys = "/home/#{node[:users].first[:username]}/.ssh/authorized_keys"
     block do
       File.open(authorized_keys, "a") do |f|
-        f.puts node[:hudson_slave][:master][:public_key]
+        f.puts node[:jenkins_slave][:master][:public_key]
       end
     end
-    not_if "grep '#{node[:hudson_slave][:master][:public_key]}' #{authorized_keys}"
+    not_if "grep '#{node[:jenkins_slave][:master][:public_key]}' #{authorized_keys}"
   end
   
   execute "setup-git-config-for-tagging" do
@@ -35,15 +35,15 @@ if ['solo','app_master'].include?(node[:instance_role]) && env_name =~ /(ci|huds
   ruby_block "add-slave-to-master" do
     block do
       Gem.clear_paths
-      require "hudson"
-      require "hudson/config"
+      require "jenkins"
+      require "jenkins/config"
 
-      Hudson::Api.setup_base_url(node[:hudson_slave][:master])
+      Jenkins::Api.setup_base_url(node[:jenkins_slave][:master])
       
-      Hudson::Api.delete_node(env_name)
+      Jenkins::Api.delete_node(env_name)
       
       # Tell master about this slave
-      Hudson::Api.add_node(
+      Jenkins::Api.add_node(
         :name        => env_name,
         :description => "Automatically added by Engine Yard AppCloud for environment #{env_name}",
         :slave_host  => node[:engineyard][:environment][:instances].first[:public_hostname],
@@ -58,17 +58,16 @@ if ['solo','app_master'].include?(node[:instance_role]) && env_name =~ /(ci|huds
   ruby_block "tell-master-about-new-jobs" do
     block do
       begin
-        job_names   = Hudson::Api.job_names
+        job_names   = Jenkins::Api.job_names
         app_names   = node[:applications].keys
         apps_to_add = app_names - job_names
 
         # Tell server about each application
-        app_names.each do |app_name|
-          Hudson::Api.delete_job(app_name)
-        # apps_to_add.each do |app_name|
+        apps_to_add.each do |app_name|
           data = node[:applications][app_name]
 
-          job_config = Hudson::JobConfigBuilder.new(:rails) do |c|
+          # job_config = Jenkins::JobConfigBuilder.new("rails") do |c|
+          job_config = Jenkins::JobConfigBuilder.new do |c|
             c.scm           = data[:repository_name]
             c.assigned_node = app_name
             c.envfile       = "/data/#{app_name}/shared/config/git-env"
@@ -82,12 +81,12 @@ if ['solo','app_master'].include?(node[:instance_role]) && env_name =~ /(ci|huds
               [:build_shell_step, "bundle exec rake RAILS_ENV=#{framework_env} RACK_ENV=#{framework_env}"]
             ]
           end
-          
-          Hudson::Api.create_job(app_name, job_config)
-          Hudson::Api.build_job(app_name)
+        
+          Jenkins::Api.create_job(app_name, job_config)
+          Jenkins::Api.build_job(app_name)
         end
       rescue Errno::ECONNREFUSED, Errno::EAFNOSUPPORT
-        raise Exception, "No connection available to the Hudson server (#{Hudson::Api.base_uri})."
+        raise Exception, "No connection available to the Jenkins server (#{Jenkins::Api.base_uri})."
       end
     end
     action :create

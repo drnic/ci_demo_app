@@ -1,2 +1,2 @@
 
-require_recipe 'hudson_slave'
+require_recipe 'jenkins_slave'
